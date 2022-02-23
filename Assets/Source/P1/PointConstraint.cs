@@ -89,12 +89,26 @@ public class PointConstraint : MonoBehaviour, IConstraint
 
     public void GetConstraints(VectorXD c)
     {
-        // TO BE COMPLETED
+        // Just save the C constraint vector to input parameter c
+        c.SetSubVector(index, 3, GetC());
     }
 
     public void GetConstraintJacobian(MatrixXD dcdx)
     {
-        // TO BE COMPLETED
+        // Get bodyA and bodyB Jacobians and set up dcdx matrix (only if they are not null)
+        MatrixXD Ja = new DenseMatrixXD(3, 6); 
+        MatrixXD Jb = new DenseMatrixXD(3, 6);
+        if (bodyA != null)
+        {       
+            Ja = GetJa();
+            dcdx.SetSubMatrix(index, bodyA.index, Ja);
+        }
+
+        if (bodyB != null)
+        {
+            Jb = GetJb();
+            dcdx.SetSubMatrix(index, bodyB.index, Jb);
+        }
     }
 
     public void GetForce(VectorXD force)
@@ -171,7 +185,19 @@ public class PointConstraint : MonoBehaviour, IConstraint
 
     public void GetForceJacobian(MatrixXD dFdx, MatrixXD dFdv)
     {
-        // TO BE COMPLETED
+        MatrixXD dcdx = new DenseMatrixXD(3, 12);
+        VectorXD c = new DenseVectorXD(3);
+        
+        // Get bodyA and bodyB Jacobians and set up dcdx matrix (only if they are not null)
+        MatrixXD Ja = new DenseMatrixXD(3, 6); 
+        MatrixXD Jb = new DenseMatrixXD(3, 6);
+        if (bodyA != null) Ja = GetJa();
+        if (bodyB != null) Jb = GetJb();
+        dcdx.SetSubMatrix(index, 0, Ja);
+        dcdx.SetSubMatrix(index, 6, Jb);
+        c.SetSubVector(index, 3, GetC());
+
+        // dFdx = -Stiffness * dcdx * dcdx.Transpose() - Stiffness * c;
     }
 
     #endregion

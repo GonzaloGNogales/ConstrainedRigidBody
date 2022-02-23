@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-
 using VectorXD = MathNet.Numerics.LinearAlgebra.Vector<double>;
 using MatrixXD = MathNet.Numerics.LinearAlgebra.Matrix<double>;
 using DenseVectorXD = MathNet.Numerics.LinearAlgebra.Double.DenseVector;
@@ -165,7 +164,46 @@ public class PhysicsManager : MonoBehaviour
     /// </summary>
     private void stepImplicit()
     {
-        // TO BE COMPLETED
+        VectorXD v = new DenseVectorXD(m_numDoFs);
+        VectorXD f = new DenseVectorXD(m_numDoFs);
+        VectorXD b = new DenseVectorXD(m_numDoFs);
+	    
+        MatrixXD A = new DenseMatrixXD(m_numDoFs);
+        MatrixXD M = new DenseMatrixXD(m_numDoFs);
+        MatrixXD dFdx = new DenseMatrixXD(m_numDoFs);
+        MatrixXD dFdv = new DenseMatrixXD(m_numDoFs);
+
+        foreach (ISimulable obj in m_objs)
+        {
+            obj.GetVelocity(v);
+            obj.GetForce(f);
+            obj.GetMass(M);
+            obj.GetForceJacobian(dFdx, dFdv);
+        }
+        foreach (IConstraint constraint in m_constraints)
+        {
+            constraint.GetForce(f);
+            constraint.GetForceJacobian(dFdx, dFdv);
+        }
+
+        foreach (ISimulable obj in m_objs)
+        {
+            obj.FixVector(f);
+            obj.FixMatrix(M);
+            obj.FixMatrix(dFdx);
+            obj.FixMatrix(dFdv);
+        }
+
+        A = M - TimeStep * dFdv - TimeStep * TimeStep * dFdx;
+        b = (M - TimeStep * dFdv) * v + TimeStep * f;
+        v = A.Solve(b);
+        VectorXD x = TimeStep * v;
+
+        foreach (ISimulable obj in m_objs)
+        {
+            obj.AdvanceIncrementalPosition(x);
+            obj.SetVelocity(v);
+        }
     }
 
     /// <summary>
@@ -174,7 +212,62 @@ public class PhysicsManager : MonoBehaviour
     /// </summary>
     private void stepSymplecticConstraints()
     {
-        // TO BE COMPLETED
+        VectorXD v = new DenseVectorXD(m_numDoFs);
+        VectorXD f = new DenseVectorXD(m_numDoFs);
+        VectorXD c = new DenseVectorXD(m_numConstraints);
+        MatrixXD M = new DenseMatrixXD(m_numDoFs);
+        
+        MatrixXD J = new DenseMatrixXD(m_numConstraints, m_numDoFs);
+
+        MatrixXD A = new DenseMatrixXD(m_numDoFs + m_numConstraints);
+        VectorXD b = new DenseVectorXD(m_numDoFs + m_numConstraints);
+        VectorXD vWithLagrangianMultipliers = new DenseVectorXD(m_numDoFs + m_numConstraints);
+
+        foreach (ISimulable obj in m_objs)
+        {
+            obj.GetVelocity(v);
+            obj.GetForce(f);
+            obj.GetMass(M);
+        }
+        foreach (IConstraint constraint in m_constraints)
+        {
+            constraint.GetConstraints(c);
+            constraint.GetConstraintJacobian(J);
+        }
+
+        foreach (ISimulable obj in m_objs)
+        {
+            obj.FixVector(f);
+            obj.FixMatrix(M);
+        }
+
+        // Build A matrix 18x18 =>
+        // ( M Jt )
+        // ( J  0 )
+        MatrixXD Jt = J.Transpose();
+        A.SetSubMatrix(0, 0, M);
+        A.SetSubMatrix(0, m_numDoFs, Jt);
+        A.SetSubMatrix(m_numDoFs, 0, J);
+        // The last 6x6 matrix is all 0s
+        
+        // Build b vector (1x(nDoFs+nConstraints)) => ( f -c/dt )
+        VectorXD minusCdeltaT = -c / TimeStep;
+        b.SetSubVector(0, m_numDoFs, f);
+        b.SetSubVector(m_numDoFs, m_numConstraints, minusCdeltaT);
+
+        // vWithLagrangianMultipliers is a 1x18 vector with first 1x12 sub-vector as v
+        // and second 1x6 solved sub-vector as lamda (lagrangian multiplier) 
+        // Solve: Av = b => v = A.solve(b)
+        // vWithLagrangianMultipliers = A.Solve(b);
+        vWithLagrangianMultipliers = A.Inverse() * b;
+        v = vWithLagrangianMultipliers.SubVector(0, m_numDoFs);
+        VectorXD x = TimeStep * v;
+
+        foreach (ISimulable obj in m_objs)
+        {
+            obj.AdvanceIncrementalPosition(x);
+            obj.SetVelocity(v);
+        }
     }
 
 }
