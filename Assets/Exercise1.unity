@@ -417,7 +417,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mass: 1
-  Damping: 0.2
+  Damping: 0.4
   index: 0
   m_pos: {x: 0, y: 0, z: 0}
   m_rot: {x: 0, y: 0, z: 0, w: 0}
@@ -456,7 +456,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mass: 1
-  Damping: 0.2
+  Damping: 0.4
   index: 0
   m_pos: {x: 0, y: 0, z: 0}
   m_rot: {x: 0, y: 0, z: 0, w: 0}
@@ -570,7 +570,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f30a794c04dac246a122112f4b0eab2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Stiffness: 100
+  Stiffness: 1000
   bodyA: {fileID: 681877196}
   bodyB: {fileID: 848276976}
 --- !u!23 &870034439
@@ -742,7 +742,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f30a794c04dac246a122112f4b0eab2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Stiffness: 100
+  Stiffness: 1000
   bodyA: {fileID: 681877196}
   bodyB: {fileID: 0}
 --- !u!23 &1391479818
@@ -859,7 +859,7 @@ MonoBehaviour:
   Constraints:
   - {fileID: 1391479816}
   - {fileID: 870034437}
-  IntegrationMethod: 1
+  IntegrationMethod: 3
 --- !u!4 &2069922279
 Transform:
   m_ObjectHideFlags: 0

@@ -250,16 +250,16 @@ public class PhysicsManager : MonoBehaviour
         A.SetSubMatrix(m_numDoFs, 0, J);
         // The last 6x6 matrix is all 0s
         
-        // Build b vector (1x(nDoFs+nConstraints)) => ( f -c/dt )
+        // Build b vector (1x(nDoFs+nConstraints)) => ( Mv+hf -c/dt )
+        VectorXD bUp = M * v + TimeStep * f;
         VectorXD minusCdeltaT = -c / TimeStep;
-        b.SetSubVector(0, m_numDoFs, f);
+        b.SetSubVector(0, m_numDoFs, bUp);
         b.SetSubVector(m_numDoFs, m_numConstraints, minusCdeltaT);
 
         // vWithLagrangianMultipliers is a 1x18 vector with first 1x12 sub-vector as v
         // and second 1x6 solved sub-vector as lamda (lagrangian multiplier) 
         // Solve: Av = b => v = A.solve(b)
-        // vWithLagrangianMultipliers = A.Solve(b);
-        vWithLagrangianMultipliers = A.Inverse() * b;
+        vWithLagrangianMultipliers = A.Solve(b);
         v = vWithLagrangianMultipliers.SubVector(0, m_numDoFs);
         VectorXD x = TimeStep * v;
 
