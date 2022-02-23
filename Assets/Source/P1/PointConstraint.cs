@@ -99,32 +99,42 @@ public class PointConstraint : MonoBehaviour, IConstraint
 
     public void GetForce(VectorXD force)
     {
-        Vector3 pA = (bodyA != null) ? bodyA.PointLocalToGlobal(pointA) : pointA;
-        Vector3 pB = (bodyB != null) ? bodyB.PointLocalToGlobal(pointB) : pointB;
-
-        Vector3 ForceA = -Stiffness * (pA - pB);
-        Vector3 ForceB = -ForceA;
+        // Vector3 pA = (bodyA != null) ? bodyA.PointLocalToGlobal(pointA) : pointA;
+        // Vector3 pB = (bodyB != null) ? bodyB.PointLocalToGlobal(pointB) : pointB;
+        //
+        // Vector3 ForceA = -Stiffness * (pA - pB);
+        // Vector3 ForceB = -ForceA;
+        //
+        // if (bodyA != null)
+        // {
+        //     Vector3 TorqueA = Vector3.Cross(pA - bodyA.m_pos, ForceA);
+        //     force.SetSubVector(bodyA.index, 3, force.SubVector(bodyA.index, 3) + Utils.ToVectorXD(ForceA));
+        //     force.SetSubVector(bodyA.index + 3, 3, force.SubVector(bodyA.index + 3, 3)
+        //                                            + Utils.ToVectorXD(TorqueA));
+        // }
+        //
+        // if (bodyB != null)
+        // {
+        //     Vector3 TorqueB = Vector3.Cross(pB - bodyB.m_pos, ForceB);
+        //     force.SetSubVector(bodyB.index, 3, force.SubVector(bodyB.index, 3) + Utils.ToVectorXD(ForceB));
+        //     force.SetSubVector(bodyB.index + 3, 3, force.SubVector(bodyB.index + 3, 3)
+        //                                            + Utils.ToVectorXD(TorqueB));
+        // }
         
         if (bodyA != null)
         {
-            Vector3 TorqueA = Vector3.Cross(pA - bodyA.m_pos, ForceA);
-            force.SetSubVector(bodyA.index, 3, force.SubVector(bodyA.index, 3) + Utils.ToVectorXD(ForceA));
-            force.SetSubVector(bodyA.index + 3, 3, force.SubVector(bodyA.index + 3, 3)
-                                                   + Utils.ToVectorXD(TorqueA));
+            VectorXD Fa = -Stiffness * GetJa().Transpose() * GetC();
+            
+            force.SetSubVector(bodyA.index, 3, force.SubVector(bodyA.index, 3) + Fa.SubVector(0, 3));
+            force.SetSubVector(bodyA.index + 3, 3, force.SubVector(bodyA.index + 3, 3) + Fa.SubVector(3, 3));
         }
-
         if (bodyB != null)
         {
-            Vector3 TorqueB = Vector3.Cross(pB - bodyB.m_pos, ForceB);
-            force.SetSubVector(bodyB.index, 3, force.SubVector(bodyB.index, 3) + Utils.ToVectorXD(ForceB));
-            force.SetSubVector(bodyB.index + 3, 3, force.SubVector(bodyB.index + 3, 3)
-                                                   + Utils.ToVectorXD(TorqueB));
-        }
-    }
+            VectorXD Fb = -Stiffness * GetJb().Transpose() * GetC();
 
-    public void GetForce2(VectorXD force)
-    {
-        
+            force.SetSubVector(bodyB.index, 3, force.SubVector(bodyB.index, 3) + Fb.SubVector(0, 3));
+            force.SetSubVector(bodyB.index + 3, 3, force.SubVector(bodyB.index + 3, 3) + Fb.SubVector(3, 3));
+        }
     }
 
     private VectorXD GetC()
@@ -136,21 +146,26 @@ public class PointConstraint : MonoBehaviour, IConstraint
 
     private MatrixXD GetJa()
     {
+        // Directly transform pointA from local to global because we know that bodyA != null
+        Vector3 pA = bodyA.PointLocalToGlobal(pointA);
         MatrixXD I = DenseMatrixXD.CreateIdentity(3);
-        MatrixXD dFdThetaa = DenseMatrixXD.CreateIdentity(3);
+        MatrixXD dCdThetaA = Utils.Skew(- pA + bodyA.m_pos);
+        
         MatrixXD dCdxa = new DenseMatrixXD(3, 6);
-        dCdxa.SetSubMatrix(0, 3, 0, 3, I);
-        dCdxa.SetSubMatrix(3, 3, 3, 3, -dFdThetaa);
+        dCdxa.SetSubMatrix(0, 0, I);
+        dCdxa.SetSubMatrix(0, 3, dCdThetaA);
         return dCdxa;
     }
 
     private MatrixXD GetJb()
     {
+        Vector3 pB = bodyB.PointLocalToGlobal(pointB);
         MatrixXD I = DenseMatrixXD.CreateIdentity(3);
-        MatrixXD dFdThetab = DenseMatrixXD.CreateIdentity(3);
+        MatrixXD dCdThetaB = Utils.Skew(pB - bodyB.m_pos);
+        
         MatrixXD dCdxb = new DenseMatrixXD(3, 6);
-        dCdxb.SetSubMatrix(0, 0, 3, 3, -I);
-        dCdxb.SetSubMatrix(3, 3, 3, 3, dFdThetab);
+        dCdxb.SetSubMatrix(0, 0, -I);
+        dCdxb.SetSubMatrix(0, 3, dCdThetaB);
         return dCdxb;
     }
 
