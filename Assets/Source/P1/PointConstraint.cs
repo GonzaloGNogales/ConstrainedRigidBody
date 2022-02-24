@@ -316,7 +316,6 @@ public class PointConstraint : MonoBehaviour, IConstraint
                     bodyB.index + 3, 
                     dFdx.SubMatrix(bodyB.index + 3, 3, bodyB.index + 3, 3) + dTbdthetab);
             }
-            
         }
         
         // If there is no bodyA but there is bodyB, the computations must be developed the opposite way,
