@@ -232,25 +232,30 @@ public class PointConstraint : MonoBehaviour, IConstraint
             // If there exists a bodyB attached to the constraint, add cross derivatives
             if (bodyB != null)
             {
+                Vector3 pB = bodyB.PointLocalToGlobal(pointB);
+                
+                // Pre-computation of dCtdThetaA = (pa - xa)* 
+                MatrixXD dCtdThetaB = Utils.Skew(pB - bodyB.m_pos);
+                
                 // dFadxa and cross derivatives computation
-                MatrixXD dFadxb = - dFadxa;
-                MatrixXD dFbdxa = - dFadxa;
-                MatrixXD dFbdxb = dFadxa;
+                MatrixXD dFadxb = Stiffness * I;
+                MatrixXD dFbdxa = Stiffness * I;
+                MatrixXD dFbdxb = - Stiffness * I;
             
                 // dFadthetaa and cross derivatives computation
-                MatrixXD dFadthetab = - dFadthetaa;
-                MatrixXD dFbdthetaa = - dFadthetaa;
-                MatrixXD dFbdthetab = dFadthetaa;
+                MatrixXD dFadthetab = - Stiffness * Utils.Skew(pB - bodyB.m_pos);
+                MatrixXD dFbdthetaa = - Stiffness * Utils.Skew(pA - bodyA.m_pos);
+                MatrixXD dFbdthetab = Stiffness * dCtdThetaB;
             
                 // dTadxa and cross derivatives computation
-                MatrixXD dTadxb = - dTadxa;
-                MatrixXD dTbdxa = - dTadxa;
-                MatrixXD dTbdxb = dTadxa;
+                MatrixXD dTadxb = Stiffness * Utils.Skew(pA - bodyA.m_pos);
+                MatrixXD dTbdxa = Stiffness * Utils.Skew(pB - bodyB.m_pos);
+                MatrixXD dTbdxb = - dFbdthetab;
             
                 // dTadthetaa and cross derivatives computation
-                MatrixXD dTadthetab = - dTadthetaa;
-                MatrixXD dTbdthetaa = - dTadthetaa;
-                MatrixXD dTbdthetab = dTadthetaa;
+                MatrixXD dTadthetab = - Stiffness * Utils.Skew(pA - bodyA.m_pos) * Utils.Skew(pB - bodyB.m_pos);
+                MatrixXD dTbdthetaa = - Stiffness * Utils.Skew(pB - bodyB.m_pos) * Utils.Skew(pA - bodyA.m_pos);
+                MatrixXD dTbdthetab = dFbdthetab * dCtdThetaB;
                 
                 /* CROSS DERIVATIVES FOR dFadxa */
                 // dFadxb

@@ -174,10 +174,12 @@ public class RigidBody : MonoBehaviour, ISimulable
             dFdv.SubMatrix(index, 3, index, 3) + forceDamping);
         
         // In rigid bodies we also need to set dFdv for Torque derivatives
-        MatrixXD torqueDamping = - Damping * m_inertia;
-        dFdv.SetSubMatrix(index, 
-            index + 3, 
-            dFdv.SubMatrix(index, 3, index + 3, 3) + torqueDamping);
+        MatrixXD torqueDamping = - Utils.Skew(m_omega)*m_inertia  
+                                 + Utils.Skew(Utils.ToVector3(m_inertia * Utils.ToVectorXD(m_omega))) 
+                                 - Damping * m_inertia;
+        dFdv.SetSubMatrix(index + 3, 
+            index + 3,
+            dFdv.SubMatrix(index + 3, 3, index + 3, 3) + torqueDamping);
     }
 
     public void GetMass(MatrixXD mass)
