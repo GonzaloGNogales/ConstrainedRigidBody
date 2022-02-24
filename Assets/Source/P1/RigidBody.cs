@@ -164,7 +164,20 @@ public class RigidBody : MonoBehaviour, ISimulable
 
     public void GetForceJacobian(MatrixXD dFdx, MatrixXD dFdv)
     {
-        // TO BE COMPLETED
+        // The derivative of (0, m*g.y, 0) is => dFdx = (0, 0, 0) as there is no x in the force (only 2nd Newton's Law)
+        // But we have to manage dFdv for simulating damping force
+        // Fill dFdv (D) and set it
+        MatrixXD I = DenseMatrixXD.CreateIdentity(3);
+        MatrixXD forceDamping = - Damping * Mass * I;
+        dFdv.SetSubMatrix(index,
+            index, 
+            dFdv.SubMatrix(index, 3, index, 3) + forceDamping);
+        
+        // In rigid bodies we also need to set dFdv for Torque derivatives
+        MatrixXD torqueDamping = - Damping * m_inertia;
+        dFdv.SetSubMatrix(index, 
+            index + 3, 
+            dFdv.SubMatrix(index, 3, index + 3, 3) + torqueDamping);
     }
 
     public void GetMass(MatrixXD mass)

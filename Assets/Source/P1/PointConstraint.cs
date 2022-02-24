@@ -185,19 +185,182 @@ public class PointConstraint : MonoBehaviour, IConstraint
 
     public void GetForceJacobian(MatrixXD dFdx, MatrixXD dFdv)
     {
-        MatrixXD dcdx = new DenseMatrixXD(3, 12);
-        VectorXD c = new DenseVectorXD(3);
+        // Identity matrix useful declaration
+        MatrixXD I = DenseMatrixXD.CreateIdentity(3);
         
-        // Get bodyA and bodyB Jacobians and set up dcdx matrix (only if they are not null)
-        MatrixXD Ja = new DenseMatrixXD(3, 6); 
-        MatrixXD Jb = new DenseMatrixXD(3, 6);
-        if (bodyA != null) Ja = GetJa();
-        if (bodyB != null) Jb = GetJb();
-        dcdx.SetSubMatrix(index, 0, Ja);
-        dcdx.SetSubMatrix(index, 6, Jb);
-        c.SetSubVector(index, 3, GetC());
+        // Compute Jacobians for each constraint only if a body is present
+        if (bodyA != null)
+        {
+            Vector3 pA = bodyA.PointLocalToGlobal(pointA);
+            
+            // Pre-computation of dCtdThetaA = (pa - xa)* 
+            MatrixXD dCtdThetaA = Utils.Skew(pA - bodyA.m_pos);
+            
+            // dFadxa
+            MatrixXD dFadxa = - Stiffness * I;
 
-        // dFdx = -Stiffness * dcdx * dcdx.Transpose() - Stiffness * c;
+            // dFadthetaa
+            MatrixXD dFadthetaa = Stiffness * dCtdThetaA;
+
+            // dTadxa
+            MatrixXD dTadxa = - dFadthetaa;
+
+            // dTadthetaa
+            MatrixXD dTadthetaa = dFadthetaa * dCtdThetaA;
+
+            // Fill dFdx (K) matrix
+            // dFadxa
+            dFdx.SetSubMatrix(bodyA.index, 
+                bodyA.index, 
+                dFdx.SubMatrix(bodyA.index, 3, bodyA.index, 3) + dFadxa);
+
+            // dFadthetaa
+            dFdx.SetSubMatrix(bodyA.index, 
+                bodyA.index + 3, 
+                dFdx.SubMatrix(bodyA.index, 3, bodyA.index + 3, 3) + dFadthetaa);
+            
+            // dTadxa
+            dFdx.SetSubMatrix(bodyA.index + 3, 
+                bodyA.index, 
+                dFdx.SubMatrix(bodyA.index + 3, 3, bodyA.index, 3) + dTadxa);
+            
+            // dTadthetaa
+            dFdx.SetSubMatrix(bodyA.index + 3, 
+                bodyA.index + 3, 
+                dFdx.SubMatrix(bodyA.index + 3, 3, bodyA.index + 3, 3) + dTadthetaa);
+
+            // If there exists a bodyB attached to the constraint, add cross derivatives
+            if (bodyB != null)
+            {
+                // dFadxa and cross derivatives computation
+                MatrixXD dFadxb = - dFadxa;
+                MatrixXD dFbdxa = - dFadxa;
+                MatrixXD dFbdxb = dFadxa;
+            
+                // dFadthetaa and cross derivatives computation
+                MatrixXD dFadthetab = - dFadthetaa;
+                MatrixXD dFbdthetaa = - dFadthetaa;
+                MatrixXD dFbdthetab = dFadthetaa;
+            
+                // dTadxa and cross derivatives computation
+                MatrixXD dTadxb = - dTadxa;
+                MatrixXD dTbdxa = - dTadxa;
+                MatrixXD dTbdxb = dTadxa;
+            
+                // dTadthetaa and cross derivatives computation
+                MatrixXD dTadthetab = - dTadthetaa;
+                MatrixXD dTbdthetaa = - dTadthetaa;
+                MatrixXD dTbdthetab = dTadthetaa;
+                
+                /* CROSS DERIVATIVES FOR dFadxa */
+                // dFadxb
+                dFdx.SetSubMatrix(bodyA.index, 
+                    bodyB.index, 
+                    dFdx.SubMatrix(bodyA.index, 3, bodyB.index, 3) + dFadxb);
+
+                // dFbdxa
+                dFdx.SetSubMatrix(bodyB.index, 
+                    bodyA.index, 
+                    dFdx.SubMatrix(bodyB.index, 3, bodyA.index, 3) + dFbdxa);
+
+                // dFbdxb
+                dFdx.SetSubMatrix(bodyB.index, 
+                    bodyB.index, 
+                    dFdx.SubMatrix(bodyB.index, 3, bodyB.index, 3) + dFbdxb);
+                
+                /* CROSS DERIVATIVES FOR dFadthetaa */
+                // dFadthetab
+                dFdx.SetSubMatrix(bodyA.index, 
+                    bodyB.index + 3, 
+                    dFdx.SubMatrix(bodyA.index, 3, bodyB.index + 3, 3) + dFadthetab);
+
+                // dFbdthetaa
+                dFdx.SetSubMatrix(bodyB.index, 
+                    bodyA.index + 3, 
+                    dFdx.SubMatrix(bodyB.index, 3, bodyA.index + 3, 3) + dFbdthetaa);
+
+                // dFbdthetab
+                dFdx.SetSubMatrix(bodyB.index, 
+                    bodyB.index + 3, 
+                    dFdx.SubMatrix(bodyB.index, 3, bodyB.index + 3, 3) + dFbdthetab);
+                
+                /* CROSS DERIVATIVES FOR dTadxa */
+                // dTadxb
+                dFdx.SetSubMatrix(bodyA.index + 3, 
+                    bodyB.index, 
+                    dFdx.SubMatrix(bodyA.index + 3, 3, bodyB.index, 3) + dTadxb);
+
+                // dTbdxa
+                dFdx.SetSubMatrix(bodyB.index + 3, 
+                    bodyA.index, 
+                    dFdx.SubMatrix(bodyB.index + 3, 3, bodyA.index, 3) + dTbdxa);
+
+                // dTbdxb
+                dFdx.SetSubMatrix(bodyB.index + 3, 
+                    bodyB.index, 
+                    dFdx.SubMatrix(bodyB.index + 3, 3, bodyB.index, 3) + dTbdxb);
+                
+                /* CROSS DERIVATIVES FOR dTadthetaa */
+                // dTadthetab
+                dFdx.SetSubMatrix(bodyA.index + 3, 
+                    bodyB.index + 3, 
+                    dFdx.SubMatrix(bodyA.index + 3, 3, bodyB.index + 3, 3) + dTadthetab);
+
+                // dTbdthetaa
+                dFdx.SetSubMatrix(bodyB.index + 3, 
+                    bodyA.index + 3, 
+                    dFdx.SubMatrix(bodyB.index + 3, 3, bodyA.index + 3, 3) + dTbdthetaa);
+
+                // dTbdthetab
+                dFdx.SetSubMatrix(bodyB.index + 3, 
+                    bodyB.index + 3, 
+                    dFdx.SubMatrix(bodyB.index + 3, 3, bodyB.index + 3, 3) + dTbdthetab);
+            }
+            
+        }
+        
+        // If there is no bodyA but there is bodyB, the computations must be developed the opposite way,
+        // computing only derivatives for b with respect to the b body itself
+        else if (bodyB != null)
+        {
+            Vector3 pB = bodyB.PointLocalToGlobal(pointB);
+            
+            // Pre-computation of dCtdThetaA = (pb - xb)* 
+            MatrixXD dCtdThetaB = Utils.Skew(pB - bodyB.m_pos);
+            
+            // dFbdxb
+            MatrixXD dFbdxb = - Stiffness * I;
+
+            // dFbdthetab
+            MatrixXD dFbdthetab = Stiffness * dCtdThetaB;
+
+            // dTbdxb
+            MatrixXD dTbdxb = - dFbdthetab;
+
+            // dTbdthetab
+            MatrixXD dTbdthetab = dFbdthetab * dCtdThetaB;
+            
+            // Fill dFdx (K) matrix
+            // dFbdxb
+            dFdx.SetSubMatrix(bodyB.index, 
+                bodyB.index, 
+                dFdx.SubMatrix(bodyB.index, 3, bodyB.index, 3) + dFbdxb);
+
+            // dFbdthetab
+            dFdx.SetSubMatrix(bodyB.index, 
+                bodyB.index + 3, 
+                dFdx.SubMatrix(bodyB.index, 3, bodyB.index + 3, 3) + dFbdthetab);
+            
+            // dTbdxb
+            dFdx.SetSubMatrix(bodyB.index + 3, 
+                bodyB.index, 
+                dFdx.SubMatrix(bodyB.index + 3, 3, bodyB.index, 3) + dTbdxb);
+            
+            // dTbdthetab
+            dFdx.SetSubMatrix(bodyB.index + 3, 
+                bodyB.index + 3, 
+                dFdx.SubMatrix(bodyB.index + 3, 3, bodyB.index + 3, 3) + dTbdthetab);
+        }
     }
 
     #endregion

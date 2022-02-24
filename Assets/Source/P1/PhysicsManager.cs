@@ -257,7 +257,7 @@ public class PhysicsManager : MonoBehaviour
         b.SetSubVector(m_numDoFs, m_numConstraints, minusCdeltaT);
 
         // vWithLagrangianMultipliers is a 1x18 vector with first 1x12 sub-vector as v
-        // and second 1x6 solved sub-vector as lamda (lagrangian multiplier) 
+        // and second 1x6 solved sub-vector as lambda (lagrangian multipliers) 
         // Solve: Av = b => v = A.solve(b)
         vWithLagrangianMultipliers = A.Solve(b);
         v = vWithLagrangianMultipliers.SubVector(0, m_numDoFs);

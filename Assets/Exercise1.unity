@@ -859,7 +859,7 @@ MonoBehaviour:
   Constraints:
   - {fileID: 1391479816}
   - {fileID: 870034437}
-  IntegrationMethod: 3
+  IntegrationMethod: 2
 --- !u!4 &2069922279
 Transform:
   m_ObjectHideFlags: 0
