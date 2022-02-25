@@ -570,7 +570,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f30a794c04dac246a122112f4b0eab2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Stiffness: 10000000
+  Stiffness: 100
   bodyA: {fileID: 681877196}
   bodyB: {fileID: 848276976}
 --- !u!23 &870034439
@@ -742,7 +742,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f30a794c04dac246a122112f4b0eab2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Stiffness: 10000000
+  Stiffness: 100
   bodyA: {fileID: 681877196}
   bodyB: {fileID: 0}
 --- !u!23 &1391479818
@@ -851,7 +851,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Paused: 0
-  TimeStep: 0.1
+  TimeStep: 0.01
   Gravity: {x: 0, y: -9.81, z: 0}
   SimObjects:
   - {fileID: 681877191}
