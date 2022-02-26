@@ -173,6 +173,7 @@ public class PointConstraint : MonoBehaviour, IConstraint
 
     private MatrixXD GetJb()
     {
+        // Directly transform pointB from local to global because we know that bodyB != null
         Vector3 pB = bodyB.PointLocalToGlobal(pointB);
         MatrixXD I = DenseMatrixXD.CreateIdentity(3);
         MatrixXD dCdThetaB = Utils.Skew(pB - bodyB.m_pos);
@@ -197,9 +198,7 @@ public class PointConstraint : MonoBehaviour, IConstraint
         {
             // Pre-computation of (pa - xa)* 
             MatrixXD paxa = Utils.Skew(pA - bodyA.m_pos);
-            // Pre-computation of (pb - xa)* 
-            MatrixXD pbxa = Utils.Skew(pB - bodyA.m_pos);
-            
+
             // dFadxa
             MatrixXD dFadxa = - Stiffness * I;
 
@@ -207,10 +206,10 @@ public class PointConstraint : MonoBehaviour, IConstraint
             MatrixXD dFadthetaa = Stiffness * paxa;
 
             // dTadxa
-            MatrixXD dTadxa = - Stiffness * paxa;  // <---
+            MatrixXD dTadxa = - Stiffness * paxa;
 
             // dTadthetaa
-            MatrixXD dTadthetaa = Stiffness * paxa * paxa;  // <---
+            MatrixXD dTadthetaa = Stiffness * paxa * paxa;
 
             // Fill dFdx (K) matrix
             // dFadxa
@@ -238,9 +237,7 @@ public class PointConstraint : MonoBehaviour, IConstraint
             {
                 // Pre-computation of (pb - xb)* 
                 MatrixXD pbxb = Utils.Skew(pB - bodyB.m_pos);
-                // Pre-computation of (pa - xb)* 
-                MatrixXD paxb = Utils.Skew(pA - bodyB.m_pos);
-                
+
                 // dFadxa and cross derivatives computation
                 MatrixXD dFadxb = Stiffness * I;
                 MatrixXD dFbdxa = Stiffness * I;
@@ -254,12 +251,12 @@ public class PointConstraint : MonoBehaviour, IConstraint
                 // dTadxa and cross derivatives computation
                 MatrixXD dTadxb = Stiffness * paxa;
                 MatrixXD dTbdxa = Stiffness * pbxb;
-                MatrixXD dTbdxb = - Stiffness * pbxb;  // <---
+                MatrixXD dTbdxb = - Stiffness * pbxb;
             
                 // dTadthetaa and cross derivatives computation
                 MatrixXD dTadthetab = - Stiffness * paxa * pbxb;
                 MatrixXD dTbdthetaa = - Stiffness * pbxb * paxa;
-                MatrixXD dTbdthetab = Stiffness * pbxb * pbxb;  // <---
+                MatrixXD dTbdthetab = Stiffness * pbxb * pbxb;
                 
                 /* CROSS DERIVATIVES FOR dFadxa */
                 // dFadxb
@@ -333,9 +330,7 @@ public class PointConstraint : MonoBehaviour, IConstraint
         {
             // Pre-computation of (pb - xb)* 
             MatrixXD pbxb = Utils.Skew(pB - bodyB.m_pos);
-            // Pre-computation of (pa - xb)* 
-            MatrixXD paxb = Utils.Skew(pA - bodyB.m_pos);
-            
+
             // dFbdxb
             MatrixXD dFbdxb = - Stiffness * I;
 
@@ -343,10 +338,10 @@ public class PointConstraint : MonoBehaviour, IConstraint
             MatrixXD dFbdthetab = Stiffness * pbxb;
 
             // dTbdxb
-            MatrixXD dTbdxb = - Stiffness * pbxb;  // <---
+            MatrixXD dTbdxb = - Stiffness * pbxb;
 
             // dTbdthetab
-            MatrixXD dTbdthetab = Stiffness * pbxb * pbxb;  // <---
+            MatrixXD dTbdthetab = Stiffness * pbxb * pbxb;
             
             // Fill dFdx (K) matrix
             // dFbdxb
